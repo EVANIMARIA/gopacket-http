@@ -74,3 +74,17 @@ func (s *StreamReader) Next(n int) ([]byte, error) {
 	copy(dst, s.buffer.Next(n))
 	return dst, nil
 }
+
+// ReadUntilEmpty 读取到空.
+func (s *StreamReader) ReadUntilEmpty() ([]byte, error) {
+	for {
+		if s.buffer.Len() == 0 {
+			if err := s.fillBuffer(); err != nil {
+				return nil, err
+			}
+		} else {
+			break
+		}
+	}
+	return s.buffer.Next(s.buffer.Len()), nil
+}
