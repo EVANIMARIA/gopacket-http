@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"log"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/tcpassembly"
@@ -130,6 +131,15 @@ func (s *httpStream) getFixedLengthContent(contentLength int) []byte {
 	return body
 }
 
+// getUntilEmpty 读取到空.
+func (s *httpStream) getUntilEmpty() []byte {
+	body, err := s.reader.ReadUntilEmpty()
+	if err != nil {
+		panic("Cannot read content, err=" + err.Error())
+	}
+	return body
+}
+
 // getContentInfo 获取请求/响应数据长度和编码.
 func getContentInfo(hs []HTTPHeaderItem) (contentLength int, contentEncoding string, contentType string, chunked bool) {
 	for _, h := range hs {
@@ -153,16 +163,34 @@ func getContentInfo(hs []HTTPHeaderItem) (contentLength int, contentEncoding str
 
 // getBody 获取请求/响应数据.
 func (s *httpStream) getBody(method string, headers []HTTPHeaderItem, isRequest bool) (body []byte) {
+	bodySrc := s.key.String()
+	log.Printf("getBody called[%v]: %v\n", bodySrc, headers)
 	contentLength, contentEncoding, _, chunked := getContentInfo(headers)
-	if (contentLength == 0 && !chunked) || (!isRequest && method == "HEAD") {
+	// if (contentLength == 0 && !chunked) || (!isRequest && method == "HEAD") {
+	// 	log.Printf("body[%v]: contentLength:[%v], chunked:[%v], isRequest:[%v], method:[%v]\n", bodySrc, contentLength, chunked, isRequest, method)
+	// 	return
+	// }
+	if (!isRequest && method == "HEAD") {
 		return
 	}
 
-	if chunked {
-		body = s.getChunked()
+	if contentLength == 0 && !chunked {
+		// 特殊情况, 实际抓包发现大量此类包为正常返回
+		log.Printf("body[%v]: contentLength:[%v], chunked:[%v], isRequest:[%v], method:[%v]\n", bodySrc, contentLength, chunked, isRequest, method)
+		// return
+		body = s.getUntilEmpty()
 	} else {
-		body = s.getFixedLengthContent(contentLength)
+		if chunked {
+			body = s.getChunked()
+		} else {
+			body = s.getFixedLengthContent(contentLength)
+		}
 	}
+	// if chunked {
+	// 	body = s.getChunked()
+	// } else {
+	// 	body = s.getFixedLengthContent(contentLength)
+	// }
 
 	var err error
 	// TODO: 支持更多压缩格式的处理
@@ -176,6 +204,7 @@ func (s *httpStream) getBody(method string, headers []HTTPHeaderItem, isRequest 
 	if err != nil {
 		body = []byte("(decompression failed)")
 	}
+	log.Printf("body[%v]: %v\n", bodySrc, string(body))
 
 	return
 }
