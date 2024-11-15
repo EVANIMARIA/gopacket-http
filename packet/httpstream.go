@@ -164,7 +164,7 @@ func getContentInfo(hs []HTTPHeaderItem) (contentLength int, contentEncoding str
 // getBody 获取请求/响应数据.
 func (s *httpStream) getBody(method string, headers []HTTPHeaderItem, isRequest bool) (body []byte) {
 	bodySrc := s.key.String()
-	log.Printf("getBody called[%v]: %v\n", bodySrc, headers)
+	// log.Printf("getBody called[%v]: %v\n", bodySrc, headers)
 	contentLength, contentEncoding, _, chunked := getContentInfo(headers)
 	// if (contentLength == 0 && !chunked) || (!isRequest && method == "HEAD") {
 	// 	log.Printf("body[%v]: contentLength:[%v], chunked:[%v], isRequest:[%v], method:[%v]\n", bodySrc, contentLength, chunked, isRequest, method)
@@ -204,7 +204,7 @@ func (s *httpStream) getBody(method string, headers []HTTPHeaderItem, isRequest 
 	if err != nil {
 		body = []byte("(decompression failed)")
 	}
-	log.Printf("body[%v]: %v\n", bodySrc, string(body))
+	// log.Printf("body[%v]: %v\n", bodySrc, string(body))
 
 	return
 }
