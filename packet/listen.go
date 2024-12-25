@@ -22,6 +22,8 @@ func (slf *Handle) Listen() error {
 
 	// 打开设备监听
 	handle, err := pcap.OpenLive(slf.cardName, 1024*1024, slf.promisc, pcap.BlockForever)
+	// local mode
+	// handle, err := pcap.OpenOffline(slf.cardName)
 	if err != nil {
 		return fmt.Errorf("openLive %s err: %v", slf.cardName, err)
 	}
@@ -46,6 +48,9 @@ func (slf *Handle) Listen() error {
 		case <-slf.ctx.Done():
 			return nil
 		case packet := <-packetSource.Packets():
+			if packet == nil {
+				return nil
+			}
 			netLayer := packet.NetworkLayer()
 			if netLayer == nil {
 				continue
