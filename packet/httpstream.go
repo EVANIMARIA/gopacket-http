@@ -135,6 +135,9 @@ func (s *httpStream) getFixedLengthContent(contentLength int) []byte {
 func (s *httpStream) getUntilEmpty() []byte {
 	body, err := s.reader.ReadUntilEmpty()
 	if err != nil {
+		if err.Error() == "EOF" {
+			return body
+		}
 		panic("Cannot read content, err=" + err.Error())
 	}
 	return body
